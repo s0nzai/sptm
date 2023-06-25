@@ -215,10 +215,6 @@ impl Lexer {
                         stream.push(lparen);
                     }
                 },
-                'B' => {
-                    self.read();
-                    stream.push(self.token(Tag::Blank));
-                },
                 '\0' => {
                     stream.push(self.token(Tag::Eof));
                 }
