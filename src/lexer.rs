@@ -51,27 +51,13 @@ impl Lexer {
     }
 
     fn read(&mut self) {
-        match self.buf.get(self.buf_idx) {
-            Some(' ') | Some('\t')=> {
-                self.pos += 1;
-                self.buf_idx += 1;
-                self.read();
-            },
-            Some('\n') => {
-                self.pos = 0;
-                self.line += 1;
-                self.buf_idx += 1;
-                self.read();
-            },
-            Some(c) => {
-                self.pos += 1;
-                self.cur = *c;
-                self.buf_idx += 1;
-            },
-            None => {
-                self.pos += 1;
-                self.cur = '\0';
-            }
+        if let Some(c) = self.buf.get(self.buf_idx) {
+            self.pos += 1;
+            self.cur = *c;
+            self.buf_idx += 1;
+        } else {
+            self.pos += 1;
+            self.cur = '\0';
         }
     }
 
@@ -122,11 +108,22 @@ impl Lexer {
             ("right", Tag::Right),
             ("blank", Tag::Blank),
         ];
+        let line = self.line;
+        let pos = self.pos;
         let map_kw = HashMap::from(keywords);
         let s = self.get_string();
-        match map_kw.get(s.as_str()) {
-            Some(t) => self.token(t.clone()),
-            None => self.token(Tag::Ident(s.clone())),
+        if let Some(t) = map_kw.get(s.as_str()) {
+            Token {
+                line,
+                pos,
+                tag: t.clone(),
+            }
+        } else {
+            Token {
+                line,
+                pos,
+                tag: Tag::Ident(s.clone())
+            }
         }
     }
 
@@ -142,11 +139,16 @@ impl Lexer {
              _ => None,
         };
         if let Some(t) = t {
+            let punct = self.token(t);
             self.read();
-            Ok(self.token(t))
+            Ok(punct)
         } else {
             if self.cur.is_ascii_alphabetic() || self.cur == '_' {
                 Ok(self.ident())
+            } else if self.cur.is_ascii_digit() || self.cur.is_ascii_punctuation() {
+                let sym = self.token(Tag::Sym(self.cur));
+                self.read();
+                Ok(sym)
             } else {
                 Err(self.error(ErrorKind::Unexpected))
             }
@@ -183,6 +185,14 @@ impl Lexer {
         self.read();
         while self.cur != '\0' {
             match self.cur {
+                ' ' | '\t' => {
+                    self.read();
+                },
+                '\n' => {
+                    self.line += 1;
+                    self.pos = 0;
+                    self.read();
+                }
                 '\"' => {
                     self.read();
                     let c = self.cur;
@@ -197,21 +207,24 @@ impl Lexer {
                     stream.push(self.token(Tag::Sym(c)));
                 },
                 '(' => {
+                    let lparen = self.token(Tag::LParen);
                     self.read();
                     if self.cur == '*' {
                         self.comment()?;
                     } else {
-                        stream.push(self.token(Tag::LParen))
+                        stream.push(lparen);
                     }
                 },
-                s => {
-                    if s.is_ascii_digit() {
-                        self.read();
-                        stream.push(self.token(Tag::Sym(s)));
-                    } else {
-                        let t = self.punct()?;
-                        stream.push(t);
-                    }
+                'B' => {
+                    self.read();
+                    stream.push(self.token(Tag::Blank));
+                },
+                '\0' => {
+                    stream.push(self.token(Tag::Eof));
+                }
+                _ => {
+                    let t = self.punct()?;
+                    stream.push(t); 
                 }
             }
         }
