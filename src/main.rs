@@ -1,7 +1,10 @@
 mod lexer;
 mod token;
+mod tree;
+mod parser;
 
 use crate::lexer::Lexer;
+use crate::parser::Parser;
 use getopts::Options;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -41,7 +44,15 @@ fn execute(fname: &str, input: &str, flags: Flags) {
             return;
         }
     };
-    println!("{:?}", stream);
+    let mut parser = Parser::new(stream);
+    let tree = match parser.parse() {
+        Ok(tree) => tree,
+        Err(e) => {
+            eprintln!("{}", e);
+            return;
+        }
+    };
+    println!("{:?}", tree)
 }
 
 fn main() {

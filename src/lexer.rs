@@ -95,6 +95,7 @@ impl Lexer {
             ("begin", Tag::Begin),
             ("end", Tag::End),
             ("if", Tag::If),
+            ("then", Tag::Then),
             ("elsif", Tag::Elsif),
             ("else", Tag::Else),
             ("while", Tag::While),
@@ -265,7 +266,7 @@ mod tests {
     fn keywords() {
         let test_file =
         "program symbol proc begin end
-        if elsif else while do repeat until
+        if then elsif else while do repeat until
             or print erase left right blank".to_string();
         let mut l = Lexer::new(test_file);
         let mut v = Vec::new();
@@ -279,6 +280,7 @@ mod tests {
             Tag::Begin,
             Tag::End,
             Tag::If,
+            Tag::Then,
             Tag::Elsif,
             Tag::Else,
             Tag::While,
