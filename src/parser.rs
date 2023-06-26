@@ -265,26 +265,26 @@ impl Parser {
         }
     }
 
-    // Stat = Call | IfStat | WhileStat | RepeatStat.
-    fn stat(&mut self) -> Result<Stat> {
+    // Stat = [Call | IfStat | WhileStat | RepeatStat].
+    fn stat(&mut self, stat_list: &mut Vec<Stat>) -> Result<()> {
         match self.cur.tag {
-            Tag::If => self.if_stat(),
-            Tag::While => self.while_stat(),
-            Tag::Repeat => self.repeat_stat(),
-            Tag::Print | Tag::Left | Tag::Right | Tag::Erase => self.inst(),
-            _ => self.call()
+            Tag::If => stat_list.push(self.if_stat()?),
+            Tag::While => stat_list.push(self.while_stat()?),
+            Tag::Repeat => stat_list.push(self.repeat_stat()?),
+            Tag::Print | Tag::Left | Tag::Right | Tag::Erase => stat_list.push(self.inst()?),
+            Tag::Ident(_) => stat_list.push(self.call()?),
+            _ => (),
         }
+        Ok(())
     }
 
-    // StatList = Stat {";" Stat }.
+    // StatList = Stat {";" Stat}.
     fn stat_list(&mut self) -> Result<Vec<Stat>> {
         let mut stat_list = Vec::new();
-        let stat = self.stat()?;
-        stat_list.push(stat);
+        self.stat(&mut stat_list)?;
         while self.cur.tag == Tag::Semicolon {
             self.read();
-            let stat = self.stat()?;
-            stat_list.push(stat);
+            self.stat(&mut stat_list)?;
         }
         Ok(stat_list)
     }
