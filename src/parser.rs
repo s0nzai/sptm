@@ -2,23 +2,7 @@
 use std::fmt;
 use crate::token::{Token, Tag};
 use crate::tree::*;
-
-#[derive(Debug)]
-pub enum Error {
-    Unexpected(Token),
-    ProcNameMatch(Token),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Unexpected(t) => write!(f, "{}:{} Unexpected token {}", t.line, t.pos, t.tag),
-            Self::ProcNameMatch(t) => write!(f, "{}:{} Procedure name {} does not match", t.line, t.pos, t.tag),
-        }
-    }
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
+use crate::error::*;
 
 pub struct Parser {
     stream: Vec<Token>,
@@ -57,12 +41,20 @@ impl Parser {
         }
     }
 
+    fn error(&self) -> Error {
+        Error::new(self.cur.pos, self.cur.line, ErrorKind::UnexpectedToken(self.cur.tag.clone()))
+    }
+
+    fn proc_name_error(&self, id: &str) -> Error {
+        Error::new(self.cur.pos, self.cur.line, ErrorKind::ProcNameMatch(id.to_string()))
+    }
+
     fn expect(&mut self, t: Tag) -> Result<()> {
         if self.cur.tag == t {
             self.read();
             Ok(())
         } else {
-            Err(Error::Unexpected(self.cur.clone()))
+            Err(self.error())
         }
     }
 
@@ -85,19 +77,19 @@ impl Parser {
                 Ok(' ')
             },
             _ => {
-                Err(Error::Unexpected(self.cur.clone()))
+                Err(self.error())
             }
         }
     }
 
     fn get_ident(&mut self) -> Result<Node<String>> {
-        let cur = self.cur.clone();
-        match cur.tag {
-            Tag::Ident(id) => {
+        match self.cur.tag {
+            Tag::Ident(ref id) => {
+                let id = id.to_string();
                 self.read();
                 Ok(self.get_node(id))
             },
-            _ => Err(Error::Unexpected(cur)),
+            _ => Err(self.error()),
         }
     }
 
@@ -119,7 +111,7 @@ impl Parser {
                 self.read();
                 Ok(Val::Sym(node))
             },
-            _ => Err(Error::Unexpected(self.cur.clone()))
+            _ => Err(self.error())
         }
     }
 
@@ -261,7 +253,7 @@ impl Parser {
                 self.read();
                 Ok(Stat::Erase)
             },
-            _ => Err(Error::Unexpected(self.cur.clone()))
+            _ => Err(self.error())
         }
     }
 
@@ -326,7 +318,7 @@ impl Parser {
         let stat_list = self.proc_body(&mut new_proc_list)?;
         let end_proc_name = self.get_ident()?;
         if proc_name != end_proc_name {
-            return Err(Error::ProcNameMatch(self.cur.clone()));
+            return Err(self.proc_name_error(&end_proc_name.node));
         }
         let proc = Proc {
             proc_name,
@@ -383,7 +375,7 @@ impl Parser {
         self.expect(Tag::End)?;
         let end_proc_name = self.get_ident()?;
         if proc_name != end_proc_name {
-            return Err(Error::ProcNameMatch(self.cur.clone()));
+            return Err(self.proc_name_error(&end_proc_name.node));
         }
         self.expect(Tag::Period)?;
         self.expect(Tag::Eof)?;

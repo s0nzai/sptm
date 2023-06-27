@@ -1,5 +1,5 @@
-use std::fmt;
 use std::collections::HashMap;
+use crate::error::*;
 use crate::token::{Tag, Token};
 
 pub struct Lexer {
@@ -9,35 +9,6 @@ pub struct Lexer {
     buf: Vec<char>,
     buf_idx: usize,
 }
-
-#[derive(Debug)]
-enum ErrorKind {
-    Unexpected,
-}
-
-#[derive(Debug)]
-pub struct Error {
-    line: u32,
-    pos: u32,
-    kind: ErrorKind,
-    cur: char,
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.kind {
-            ErrorKind::Unexpected => {
-                if self.cur == '\0' {
-                    write!(f, "{}:{} Unexpected EOF", self.line, self.pos)
-                } else {
-                    write!(f, "{}:{} Unexpected character '{}'", self.line, self.pos, self.cur)
-                }
-            },
-        }
-    }
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
 
 impl Lexer {
     pub fn new(input: String) -> Lexer {
@@ -69,13 +40,8 @@ impl Lexer {
         }
     }
 
-    fn error(&self, kind: ErrorKind) -> Error {
-        Error {
-            line: self.line,
-            pos: self.pos,
-            kind,
-            cur: self.cur,
-        }
+    fn error(&self) -> Error {
+        Error::new(self.line, self.pos, ErrorKind::UnexpectedChar(self.cur))
     }
 
     fn get_string(&mut self) -> String {
@@ -151,7 +117,7 @@ impl Lexer {
                 self.read();
                 Ok(sym)
             } else {
-                Err(self.error(ErrorKind::Unexpected))
+                Err(self.error())
             }
         }
     }
@@ -175,7 +141,7 @@ impl Lexer {
             }
         }
         if self.cur == '\0' {
-            Err(self.error(ErrorKind::Unexpected))
+            Err(self.error())
         } else {
             Ok(())
         }
@@ -198,11 +164,11 @@ impl Lexer {
                     self.read();
                     let c = self.cur;
                     if c.is_control() {
-                        return Err(self.error(ErrorKind::Unexpected));
+                        return Err(self.error());
                     }
                     self.read();
                     if self.cur != '\"' {
-                        return Err(self.error(ErrorKind::Unexpected));
+                        return Err(self.error());
                     }
                     self.read();
                     stream.push(self.token(Tag::Sym(c)));
