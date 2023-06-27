@@ -66,15 +66,12 @@ impl Parser {
         }
     }
 
-    fn get_sym(&mut self) -> Result<char> {
+    fn get_sym(&mut self) -> Result<Node<char>> {
         match self.cur.tag {
             Tag::Sym(s) => {
+                let node = self.get_node(s);
                 self.read();
-                Ok(s)
-            },
-            Tag::Blank => {
-                self.read();
-                Ok(' ')
+                Ok(node)
             },
             _ => {
                 Err(self.error())
@@ -85,9 +82,9 @@ impl Parser {
     fn get_ident(&mut self) -> Result<Node<String>> {
         match self.cur.tag {
             Tag::Ident(ref id) => {
-                let id = id.to_string();
+                let node = self.get_node(id.to_string());
                 self.read();
-                Ok(self.get_node(id))
+                Ok(node)
             },
             _ => Err(self.error()),
         }
@@ -346,11 +343,11 @@ impl Parser {
     }
 
     // SymbolDecl = "symbol" {symbol ";"}.
-    fn symbol_decl(&mut self) -> Result<Vec<char>> {
+    fn symbol_decl(&mut self) -> Result<Vec<Node<char>>> {
         let mut symbols = Vec::new();
         self.expect(Tag::Symbol)?;
         if let Tag::Sym(s) = self.cur.tag {
-            symbols.push(s);
+            symbols.push(self.get_node(s));
             self.read();
             while self.cur.tag == Tag::Semicolon {
                 self.read();
@@ -437,7 +434,7 @@ mod tests {
         let ans = Proc {
             proc_name: make_node(test),
             args: Vec::new(),
-            symbols: vec!['0'],
+            symbols: vec![make_node('0')],
             proc_list: Vec::new(),
             stat_list: vec![Stat::Left],
         };
@@ -488,7 +485,7 @@ mod tests {
         let ans_test = Proc {
             proc_name: make_node(test),
             args: Vec::new(),
-            symbols: vec!['0'],
+            symbols: vec![make_node('0')],
             proc_list: vec![ans_test_proc],
             stat_list: vec![Stat::Call(make_node(test_proc), vec![Val::Sym(make_node('0'))])],
         };
@@ -528,7 +525,7 @@ mod tests {
         let ans = Proc {
             proc_name: make_node(test),
             args: Vec::new(),
-            symbols: vec!['0'],
+            symbols: vec![make_node('0')],
             proc_list: Vec::new(),
             stat_list: vec![ans_if],
         };
@@ -560,7 +557,7 @@ mod tests {
         let ans = Proc {
             proc_name: make_node(test),
             args: Vec::new(),
-            symbols: vec!['0'],
+            symbols: vec![make_node('0')],
             proc_list: Vec::new(),
             stat_list: vec![ans_while],
         };
@@ -591,7 +588,7 @@ mod tests {
         let ans = Proc {
             proc_name: make_node(test),
             args: Vec::new(),
-            symbols: vec!['0'],
+            symbols: vec![make_node('0')],
             proc_list: Vec::new(),
             stat_list: vec![ans_repeat],
         };
@@ -634,7 +631,7 @@ mod tests {
         let ans = Proc {
             proc_name: make_node(test),
             args: Vec::new(),
-            symbols: vec!['0'],
+            symbols: vec![make_node('0')],
             proc_list: Vec::new(),
             stat_list: vec![ans_if],
         };

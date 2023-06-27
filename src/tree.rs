@@ -40,7 +40,7 @@ pub enum Stat {
 pub struct Proc {
     pub proc_name: Node<String>,
     pub args: Vec<Node<String>>,
-    pub symbols: Vec<char>,
+    pub symbols: Vec<Node<char>>,
     pub proc_list: Vec<Proc>,
     pub stat_list: Vec<Stat>,
 }
