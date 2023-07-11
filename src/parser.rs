@@ -1,5 +1,4 @@
 
-use std::fmt;
 use crate::token::{Token, Tag};
 use crate::tree::*;
 use crate::error::*;
@@ -42,7 +41,7 @@ impl Parser {
     }
 
     fn error(&self) -> Error {
-        Error::new(self.cur.pos, self.cur.line, ErrorKind::UnexpectedToken(self.cur.tag.clone()))
+        Error::new(self.cur.line, self.cur.pos, ErrorKind::UnexpectedToken(self.cur.tag.clone()))
     }
 
     fn proc_name_error(&self, id: &str) -> Error {

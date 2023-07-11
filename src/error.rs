@@ -31,6 +31,13 @@ pub enum ErrorKind {
     UnexpectedChar(char),
     UnexpectedToken(Tag),
     ProcNameMatch(String),
+    DupSymbol(char),
+    DupIdent(String),
+    NotFound(String),
+    IsProc(String),
+    IsSym(String),
+    ArgsNum(String),
+    NotSym(char),
 }
 
 impl fmt::Display for ErrorKind {
@@ -43,8 +50,29 @@ impl fmt::Display for ErrorKind {
                 write!(f, "Unexpected token {}", t)
             },
             Self::ProcNameMatch(id) => {
-                write!(f, "procedure name {} does not match", id)
-            }
+                write!(f, "Procedure name {} does not match", id)
+            },
+            Self::DupSymbol(s) => {
+                write!(f, "Duplicate symbol {}", s)
+            },
+            Self::DupIdent(id) => {
+                write!(f, "Duplicate ident {}", id)
+            },
+            Self::NotFound(id) => {
+                write!(f, "Ident {} is not found", id)
+            },
+            Self::IsProc(id) => {
+                write!(f, "Ident {} is procedure", id)
+            },
+            Self::IsSym(id) => {
+                write!(f, "Ident {} is symbol", id)
+            },
+            Self::ArgsNum(id) => {
+                write!(f, "Number of args of {} is different.", id)
+            },
+            Self::NotSym(s) => {
+                write!(f, "{} is not in symbols", s)
+            },
         }
     }
 }

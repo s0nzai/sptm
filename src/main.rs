@@ -3,9 +3,12 @@ mod lexer;
 mod token;
 mod tree;
 mod parser;
+mod expand;
 
 use crate::lexer::Lexer;
 use crate::parser::Parser;
+use crate::expand::Expand;
+use crate::error::Result;
 use getopts::Options;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -20,40 +23,15 @@ fn print_usage(prog_name: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn execute(fname: &str, input: &str, flags: Flags) {
-    let file = match File::open(fname) {
-        Ok(file) => file,
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    };
-    let mut reader = BufReader::new(file);
-    let mut source = String::new();
-    match reader.read_to_string(&mut source) {
-        Ok(_) => (),
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    }
+fn execute(source: String, input: &str, flags: Flags) -> Result<()> {
     let mut lexer = Lexer::new(source);
-    let stream = match lexer.lexing() {
-        Ok(stream) => stream,
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    };
+    let stream = lexer.lexing()?;
     let mut parser = Parser::new(stream);
-    let tree = match parser.parse() {
-        Ok(tree) => tree,
-        Err(e) => {
-            eprintln!("{}", e);
-            return;
-        }
-    };
-    println!("{:?}", tree)
+    let tree = parser.parse()?;
+    let mut expand = Expand::new();
+    let proc = expand.expand_proc(tree, Vec::new())?;
+    println!("{:?}", proc);
+    Ok(())
 }
 
 fn main() {
@@ -81,7 +59,29 @@ fn main() {
             Some(input) => input,
             None => "",
         };
-        execute(filename, input, flags);
+        let file = match File::open(filename) {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        };
+        let mut reader = BufReader::new(file);
+        let mut source = String::new();
+        match reader.read_to_string(&mut source) {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        }
+        match execute(source, input, flags) {
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("{}", e);
+                return;
+            }
+        }
     } else {
         eprintln!("Too few argments.") 
     }
