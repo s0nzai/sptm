@@ -49,60 +49,55 @@ impl Gen {
         }
     }
 
-    fn gen_jump(&self, q: &mut Quintuples, state: u64, dest: u64) {
-        for s in &self.symbols {
-            let action = Action(*s, Move::NoMove, dest);
-            q.insert(state, *s, action)
+    fn gen_jump(&mut self, q: &mut Quintuples, cond: &HashSet<char>, state: u64, dest: u64) {
+        if let Some(s) = self.cur_print {
+            let action = Action(s, Move::NoMove, dest);
+            for s in cond {
+                q.insert(state, *s, action.clone());
+            }
+            self.cur_print = None;
+        } else {
+            for s in cond {
+                let action = Action(*s, Move::NoMove, dest);
+                q.insert(state, *s, action);
+            }
         }
     }
 
     fn gen_if(&mut self, q: &mut Quintuples, e: Expr, stat_list: Vec<Stat>, else_stat: Vec<Stat>) {
+        let symbols = self.symbols.clone();
         let cond = self.gen_expr(e);
         let state = q.final_state;
-        for s in &cond {
-            let action = Action(*s, Move::NoMove, state + 1);
-            q.insert(state, *s, action);
-        }
+        self.gen_jump(q, &cond, state, state + 1);
         self.gen_stat_list(q, stat_list);
         let else_state = q.final_state;
-        self.gen_jump(q, else_state, 0);
-        let else_cond = self.symbols.difference(&cond);
-        for s in else_cond {
-            let action = Action(*s, Move::NoMove, else_state + 1);
-            q.insert(state, *s, action);
-        }
+        self.gen_jump(q, &symbols, else_state, 0);
+        let else_cond = self.symbols.difference(&cond).copied().collect();
+        self.gen_jump(q, &else_cond, state, else_state + 1);
         self.gen_stat_list(q, else_stat);
-        self.gen_jump(q, else_state, q.final_state);
+        self.gen_jump(q, &symbols, else_state, q.final_state);
     }
 
     fn gen_while(&mut self, q: &mut Quintuples, e: Expr, stat_list: Vec<Stat>) {
+        let symbols = self.symbols.clone();
         let cond = self.gen_expr(e);
         let state = q.final_state;
-        self.gen_jump(q, state, state + 1);
+        self.gen_jump(q, &symbols, state, state + 1);
         self.gen_stat_list(q, stat_list);
-        self.gen_jump(q, q.final_state, state);
-        let break_cond = self.symbols.difference(&cond);
-        let final_state = q.final_state;
-        for s in break_cond {
-            let action = Action(*s, Move::NoMove, final_state);
-            q.insert(state, *s, action);
-        }
+        self.gen_jump(q, &symbols, q.final_state, state);
+        let break_cond = self.symbols.difference(&cond).copied().collect();
+        self.gen_jump(q, &break_cond, state, q.final_state);
     }
     
     fn gen_repeat(&mut self, q: &mut Quintuples, stat_list: Vec<Stat>, e: Expr) {
+        self.gen_print(q);
+        let symbol = self.symbols.clone();
         let state = q.final_state;
         self.gen_stat_list(q, stat_list);
         let cond = self.gen_expr(e);
         let final_state = q.final_state;
-        for s in &self.symbols {
-            if cond.contains(s) {
-                let action = Action(*s, Move::NoMove, final_state + 1);
-                q.insert(final_state, *s, action);
-            } else {
-                let action = Action(*s, Move::NoMove, state);
-                q.insert(final_state, *s, action);
-            }
-        }
+        self.gen_jump(q, &symbol, final_state, state);
+        self.gen_jump(q, &cond, final_state, final_state + 1);
     }
 
     fn gen_print(&mut self, q: &mut Quintuples) {
@@ -135,18 +130,9 @@ impl Gen {
     fn gen_stat_list(&mut self, q: &mut Quintuples, stat_list: Vec<Stat>) {
         for stat in stat_list {
             match stat {
-                Stat::If(e, stat_list, else_stat) => {
-                    self.gen_print(q);
-                    self.gen_if(q, e, stat_list, else_stat)
-                },
-                Stat::While(e, stat_list) => {
-                    self.gen_print(q);
-                    self.gen_while(q, e, stat_list)
-                },
-                Stat::Repeat(stat_list, e) => {
-                    self.gen_print(q);
-                    self.gen_repeat(q, stat_list, e)
-                },
+                Stat::If(e, stat_list, else_stat) => self.gen_if(q, e, stat_list, else_stat),
+                Stat::While(e, stat_list) => self.gen_while(q, e, stat_list),
+                Stat::Repeat(stat_list, e) => self.gen_repeat(q, stat_list, e),
                 Stat::Print(Val::Sym(s)) => {
                     self.cur_print = Some(s.node);
                 },
