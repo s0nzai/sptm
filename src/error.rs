@@ -35,7 +35,6 @@ pub enum ErrorKind {
     DupIdent(String),
     NotFound(String),
     IsProc(String),
-    IsSym(String),
     ArgsNum(String),
     NotSym(char),
 }
@@ -63,9 +62,6 @@ impl fmt::Display for ErrorKind {
             },
             Self::IsProc(id) => {
                 write!(f, "Ident {} is procedure", id)
-            },
-            Self::IsSym(id) => {
-                write!(f, "Ident {} is symbol", id)
             },
             Self::ArgsNum(id) => {
                 write!(f, "Number of args of {} is different.", id)

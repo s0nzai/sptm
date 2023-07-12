@@ -4,11 +4,14 @@ mod token;
 mod tree;
 mod parser;
 mod expand;
+mod gen;
+mod quintuples;
 
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::expand::Expand;
 use crate::error::Result;
+use crate::gen::Gen;
 use getopts::Options;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -30,7 +33,9 @@ fn execute(source: String, input: &str, flags: Flags) -> Result<()> {
     let tree = parser.parse()?;
     let mut expand = Expand::new();
     let proc = expand.expand_proc(tree, Vec::new())?;
-    println!("{:?}", proc);
+    let mut gen = Gen::new();
+    let q = gen.gen(proc);
+    println!("{}", q);
     Ok(())
 }
 
