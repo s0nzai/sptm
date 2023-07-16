@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -55,6 +55,14 @@ impl Quintuples {
             self.final_state = state + 1;
         }
     }
+
+    pub fn iter(&self) -> DFSIter {
+        DFSIter {
+            q: self,
+            stack: vec![(0, ' ')],
+            visited: HashSet::new(),
+        }
+    }
 }
 
 impl fmt::Display for Quintuples {
@@ -81,6 +89,40 @@ impl fmt::Display for Quintuples {
             writeln!(f, "")?;
         }
         write!(f, "")
+    }
+}
+
+pub struct DFSIter<'a> {
+    q: &'a Quintuples,
+    stack: Vec<(u64, char)>,
+    visited: HashSet<(u64, char)>,
+}
+
+impl<'a> Iterator for DFSIter<'a> {
+    type Item = (u64, char);
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some((state, read)) = self.stack.pop() {
+            if !self.visited.insert((state, read)) {
+                return self.next();
+            }
+            if let Some(Action(print, mv, next_state)) = self.q.get(state, read) {
+                match mv {
+                    Move::NoMove => {
+                        self.stack.push((*next_state, *print));
+                    },
+                    Move::Left | Move::Right => {
+                        for s in &self.q.symbol {
+                            self.stack.push((*next_state, *s));
+                        }
+                    }
+                }
+                Some((state, read))
+            } else {
+                self.next()
+            }
+        } else {
+            None
+        }
     }
 }
 

@@ -6,12 +6,14 @@ mod parser;
 mod expand;
 mod gen;
 mod quintuples;
+mod optimize;
 
 use crate::lexer::Lexer;
 use crate::parser::Parser;
 use crate::expand::Expand;
 use crate::error::Result;
 use crate::gen::Gen;
+use crate::optimize::optimize;
 use getopts::Options;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -35,6 +37,7 @@ fn execute(source: String, input: &str, flags: Flags) -> Result<()> {
     let proc = expand.expand_proc(tree, Vec::new())?;
     let mut gen = Gen::new();
     let q = gen.gen(proc);
+    let q = optimize(q);
     println!("{}", q);
     Ok(())
 }
