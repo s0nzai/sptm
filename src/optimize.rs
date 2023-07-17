@@ -78,8 +78,12 @@ fn renumbering(q: Quintuples) -> Quintuples {
     }
     for (state, read) in q.iter() {
         let Action(print, mv, next_state) = q.get(state, read).unwrap();
-        let next_state = map.get(next_state).unwrap_or(next_state);
-        let action = Action(*print, *mv, *next_state);
+        let next_state = if *next_state >= q.final_state {
+            j
+        } else {
+            *map.get(next_state).unwrap_or(next_state)
+        };
+        let action = Action(*print, *mv, next_state);
         let state = map.get(&state).unwrap_or(&state);
         r.insert(*state, read, action);
     }
@@ -111,7 +115,7 @@ mod tests {
         let test_q = optimize(test_q);
         let mut ans = Quintuples::new(vec![' ', '0']);
         ans.insert(0, ' ', Action(' ', Move::Right, 1));
-        ans.insert(1, ' ', Action(' ', Move::NoMove, 4));
+        ans.insert(1, ' ', Action(' ', Move::NoMove, 2));
         ans.insert(1, '0', Action(' ', Move::Right, 1));
         assert_eq!(test_q, ans)
     }
