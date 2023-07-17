@@ -65,19 +65,6 @@ impl Parser {
         }
     }
 
-    fn get_sym(&mut self) -> Result<Node<char>> {
-        match self.cur.tag {
-            Tag::Sym(s) => {
-                let node = self.get_node(s);
-                self.read();
-                Ok(node)
-            },
-            _ => {
-                Err(self.error())
-            }
-        }
-    }
-
     fn get_ident(&mut self) -> Result<Node<String>> {
         match self.cur.tag {
             Tag::Ident(ref id) => {
@@ -332,10 +319,11 @@ impl Parser {
         if self.cur.tag == Tag::Proc {
             let proc = self.proc_decl()?;
             proc_list.push(proc);
-            while self.cur.tag == Tag::Semicolon {
-                self.read();
+            self.expect(Tag::Semicolon)?;
+            while self.cur.tag == Tag::Proc {
                 let proc = self.proc_decl()?;
                 proc_list.push(proc);
+                self.expect(Tag::Semicolon)?;
             }
         }
         Ok(proc_list)
@@ -348,10 +336,11 @@ impl Parser {
         if let Tag::Sym(s) = self.cur.tag {
             symbols.push(self.get_node(s));
             self.read();
-            while self.cur.tag == Tag::Semicolon {
+            self.expect(Tag::Semicolon)?;
+            while let Tag::Sym(s) = self.cur.tag {
+                symbols.push(self.get_node(s));
                 self.read();
-                let s = self.get_sym()?;
-                symbols.push(s);
+                self.expect(Tag::Semicolon)?;
             }
         }
         Ok(symbols)
@@ -422,6 +411,7 @@ mod tests {
             Tag::Semicolon,
             Tag::Symbol,
             Tag::Sym('0'),
+            Tag::Semicolon,
             Tag::Begin,
             Tag::Left,
             Tag::End,
@@ -451,6 +441,7 @@ mod tests {
             Tag::Semicolon,
             Tag::Symbol,
             Tag::Sym('0'),
+            Tag::Semicolon,
             Tag::Proc,
             Tag::Ident(test_proc.clone()),
             Tag::LParen,
@@ -464,6 +455,7 @@ mod tests {
             Tag::RParen,
             Tag::End,
             Tag::Ident(test_proc.clone()),
+            Tag::Semicolon,
             Tag::Begin,
             Tag::Ident(test_proc.clone()),
             Tag::LParen,
@@ -500,6 +492,7 @@ mod tests {
             Tag::Semicolon,
             Tag::Symbol,
             Tag::Sym('0'),
+            Tag::Semicolon,
             Tag::Begin,
             Tag::If,
             Tag::Sym('0'),
@@ -540,6 +533,7 @@ mod tests {
             Tag::Semicolon,
             Tag::Symbol,
             Tag::Sym('0'),
+            Tag::Semicolon,
             Tag::Begin,
             Tag::While,
             Tag::Sym('0'),
@@ -572,6 +566,7 @@ mod tests {
             Tag::Semicolon,
             Tag::Symbol,
             Tag::Sym('0'),
+            Tag::Semicolon,
             Tag::Begin,
             Tag::Repeat,
             Tag::Left,
@@ -603,6 +598,7 @@ mod tests {
             Tag::Semicolon,
             Tag::Symbol,
             Tag::Sym('0'),
+            Tag::Semicolon,
             Tag::Begin,
             Tag::If,
             Tag::Not,
