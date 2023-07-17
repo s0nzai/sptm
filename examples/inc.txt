@@ -1,0 +1,35 @@
+
+program inc;
+    symbol 0; 1;
+
+    proc find_r(s);
+    begin
+        repeat
+            right
+        until s
+    end find_r;
+
+    proc find_l(s);
+    begin
+        repeat
+            left
+        until s
+    end find_l;
+begin
+    find_r(blank);
+    left;
+    while 1 do
+        print(0);
+        left
+    end;
+    if 0 then
+        print(1)
+    elsif blank then
+        right;
+        print(1);
+        find_r(blank);
+        print(0)
+    end;
+    find_l(blank)
+end inc.
+

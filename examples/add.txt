@@ -1,0 +1,134 @@
+
+program add;
+    symbol 0; 1; #; "O"; "I";
+ 
+    proc find_r(a);
+    begin
+        repeat
+            right
+        until a
+    end find_r;
+
+    proc find_l(a);
+    begin
+        repeat
+            left
+        until a
+    end find_l;
+
+    proc erase_block_l;
+    begin
+        repeat
+            erase;
+            left
+        until blank
+    end erase_block_l;
+
+    proc inc_with_carry;
+    begin
+        while 1 do
+            print("0");
+            left
+        end;
+        if blank then
+            print(#)
+        elsif "0" then
+            print(1)
+        end
+    end inc_with_carry;
+    
+    proc add_digit_0;
+    begin
+        if 0 then
+            print("O")
+        elsif 1 then
+            print("I")
+        end
+    end add_digit_0;
+
+    proc add_digit_1;
+    begin
+        if 0 then
+            print("I")
+        elsif 1 then
+            print("O");
+            left;
+            inc_with_carry
+        end
+    end add_digit_1;
+
+    proc move_to_x;
+    begin
+        find_l(blank);
+        repeat
+            left
+        until 0 or 1 or blank;
+    end move_to_x;
+
+    proc add_digit;
+    begin
+        if 0 then
+            print(#);
+            move_to_x;
+            add_digit_0
+        elsif 1 then
+            print(#);
+            move_to_x;
+            add_digit_1
+        end
+    end add_digit;
+
+    proc shift;
+    begin
+        repeat
+            if 0 then
+                erase;
+                right;
+                print(0)
+            elsif 1 then
+                erase;
+                right;
+                print(1)
+            end;
+            left;
+            left
+        until #;
+        erase;
+        right;
+        print(1);
+        left
+    end shift;
+
+    proc clean;
+    begin
+        erase_block_l;
+        left;
+        repeat
+            if "O" then
+                print("0")
+            elsif "I" then
+                print("1")
+            end;
+            left
+        until blank or #;
+        if # then
+            find_r(blank);
+            left;
+            shift
+        end
+    end clean;
+
+begin
+    find_r(blank);
+    find_r(blank);
+    left;
+    repeat
+        add_digit;
+        find_r(#);
+        left
+    until blank;
+    find_r(blank);
+    left;
+    clean
+end add.
+
