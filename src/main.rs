@@ -7,6 +7,7 @@ mod expand;
 mod gen;
 mod quintuples;
 mod optimize;
+mod machine;
 
 use crate::lexer::Lexer;
 use crate::parser::Parser;
@@ -14,6 +15,7 @@ use crate::expand::Expand;
 use crate::error::Result;
 use crate::gen::Gen;
 use crate::optimize::optimize;
+use crate::machine::{Machine, Config};
 use getopts::Options;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -39,6 +41,13 @@ fn execute(source: String, input: &str, flags: Flags) -> Result<()> {
     let q = gen.gen(proc);
     let q = optimize(q);
     println!("{}", q);
+    let mut machine = Machine::new(q, Config::new(input.to_string()));
+    let mut j = 0;
+    while let Some(c) = machine.run_step() {
+        println!("{}", c);
+        j += 1;
+    }
+    println!("steps: {}", j);
     Ok(())
 }
 
