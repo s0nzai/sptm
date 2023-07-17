@@ -22,7 +22,8 @@ use std::io::{BufReader, Read};
 use std::env;
 
 struct Flags {
-    dummy: bool,
+    print_table: bool,
+    result: bool,
 }
 
 fn print_usage(prog_name: &str, opts: Options) {
@@ -41,11 +42,21 @@ fn execute(source: String, input: &str, flags: Flags) -> Result<()> {
     let q = gen.gen(proc);
     let q = optimize(q);
     println!("{}", q);
-    let mut machine = Machine::new(q, Config::new(input.to_string()));
+    if flags.print_table {
+        return Ok(());
+    }
+    let c = Config::new(input.to_string());
+    println!("{}", c);
+    let mut machine = Machine::new(q, c);
     let mut j = 0;
     while let Some(c) = machine.run_step() {
-        println!("{}", c);
         j += 1;
+        if !flags.result {
+            println!("{}", c);
+        }
+    }
+    if flags.result {
+        println!("{}", machine.config);
     }
     println!("steps: {}", j);
     Ok(())
@@ -56,6 +67,8 @@ fn main() {
     let prog_name = args[0].clone();
     let mut opts = Options::new();
     opts.optflag("h", "help", "Print help.");
+    opts.optflag("p", "print-table", "Print table only.");
+    opts.optflag("r", "result", "Print result only.");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(e) => {
@@ -68,7 +81,8 @@ fn main() {
         return;
     };
     let flags = Flags {
-        dummy: true,
+        print_table: matches.opt_present("p"),
+        result: matches.opt_present("r"),
     };
     let free_args = matches.free;
     if let Some(filename) = free_args.get(0) {

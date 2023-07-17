@@ -60,7 +60,7 @@ impl fmt::Display for Config {
 
 pub struct Machine {
     quadruples: Quintuples,
-    config: Config,
+    pub config: Config,
 }
 
 impl Machine {
